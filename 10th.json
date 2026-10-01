@@ -1,0 +1,35 @@
+{
+  "EST_002": {
+    "nombre": "Lorena",
+    "apellido": "Muñoz",
+    "curso": "10th grade",
+    "decimas": 0,
+    "historial": [
+      {
+        "cantidad": 3,
+        "motivo": "Guia Completa",
+        "fecha": "28/9 23:39"
+      },
+      {
+        "cantidad": -2,
+        "motivo": "Mal comportamiento",
+        "fecha": "28/9 23:39"
+      },
+      {
+        "cantidad": 3,
+        "motivo": "Guia Completa",
+        "fecha": "29/9 9:48"
+      },
+      {
+        "cantidad": -1,
+        "motivo": "Cobradas",
+        "fecha": "29/9 9:48"
+      },
+      {
+        "cantidad": -3,
+        "motivo": "Cobradas",
+        "fecha": "29/9 20:35"
+      }
+    ]
+  }
+}

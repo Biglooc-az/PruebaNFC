@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAAA Décimas</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --error: #ef4444;
+      --success: #10b981;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: var(--card-bg);
+      padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+      width: 100%;
+      max-width: 460px;
+      text-align: center;
+      position: relative;
+    }
+
+    h1 { font-size: 1.8rem; margin-top: 0; margin-bottom: 20px; color: var(--primary); }
+    h3 { margin-bottom: 10px; }
+
+    .btn {
+      display: block; width: 100%; padding: 12px; margin: 8px 0;
+      font-size: 0.95rem; font-weight: 600; color: white;
+      background-color: var(--primary); border: none; border-radius: 12px;
+      cursor: pointer; transition: transform 0.05s ease, opacity 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .btn:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-secondary { background-color: #6b7280; }
+    .btn-danger { background-color: var(--error); }
+    .btn-small { padding: 6px 12px; font-size: 0.85rem; width: auto; display: inline-block; }
+
+    input[type="password"], select {
+      width: 100%; padding: 12px; font-size: 1rem; margin: 8px 0 16px 0;
+      border: 2px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; outline: none;
+      background-color: #f9fafb;
+    }
+
+    .filter-container {
+      text-align: left;
+      margin-bottom: 12px;
+    }
+
+    .filter-container label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #4b5563;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .filter-container select {
+      margin-bottom: 0;
+    }
+
+    .section { display: none; opacity: 0; transition: opacity 0.15s ease-in-out; }
+    .section.active { display: block; opacity: 1; }
+
+    .nfc-icon { font-size: 3rem; margin: 10px 0; }
+    .decimas-badge { font-size: 3rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
+
+    .history-list {
+      text-align: left; max-height: 180px; overflow-y: auto;
+      border: 1px solid #f3f4f6; padding: 8px 12px; border-radius: 10px; background: #fafafa;
+    }
+
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem;
+    }
+
+    .history-item:last-child { border-bottom: none; }
+    .btn-group { display: flex; gap: 8px; margin: 8px 0; }
+    .btn-group .btn { margin: 0; }
+    .block-title { text-align: left; font-weight: 700; margin-top: 14px; margin-bottom: 4px; color: #374151; font-size: 0.95rem; }
+
+    /* Estilos para Lista General y Ráfaga */
+    .student-card-list {
+      text-align: left; max-height: 260px; overflow-y: auto;
+      border: 1px solid #e5e7eb; border-radius: 12px; padding: 8px; background: #fafafa; margin-bottom: 15px;
+    }
+
+    .student-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 8px; border-bottom: 1px solid #edf2f7;
+    }
+    .student-row:last-child { border-bottom: none; }
+    .student-info { font-size: 0.9rem; }
+    .student-info small { color: #6b7280; display: block; }
+
+    .checkbox-row { display: flex; align-items: center; gap: 10px; cursor: pointer; width: 100%; }
+    .checkbox-row input { width: 18px; height: 18px; accent-color: var(--primary); }
+
+    .tab-group { display: flex; gap: 6px; margin-bottom: 15px; }
+    .tab-btn { flex: 1; padding: 8px; border: 1px solid #d1d5db; background: #f3f4f6; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .toast {
+      display: none; padding: 12px; border-radius: 10px; margin-bottom: 15px;
+      font-weight: 600; font-size: 0.9rem; animation: fadeIn 0.2s ease-in-out;
+    }
+    .toast-success { background-color: #d1fae5; color: #065f46; }
+    .toast-error { background-color: #fee2e2; color: #991b1b; }
+
+    .nfc-status {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>JAAA Décimas</h1>
+
+    <div id="toast-banner" class="toast"></div>
+
+    <!-- 1. PANTALLA INICIO -->
+    <div id="pantalla-inicio" class="section active">
+      <div class="nfc-icon">💳</div>
+      <p>Acerca tu tarjeta NFC al dispositivo para ver tus décimas.</p>
+      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor</button>
+      <div id="nfc-status-msg" class="nfc-status">Iniciando lector NFC web...</div>
+    </div>
+
+    <!-- 2. PANTALLA CONSULTA ESTUDIANTE -->
+    <div id="pantalla-consulta" class="section">
+      <h3 id="estudiante-nombre">Cargando datos...</h3>
+      <div id="estudiante-curso" style="color:#6b7280; font-size:0.9rem;">-</div>
+      <div>Saldo Total:</div>
+      <div class="decimas-badge" id="estudiante-total-decimas">0</div>
+      
+      <h4>Últimos Movimientos</h4>
+      <div class="history-list" id="estudiante-historial"></div>
+
+      <hr style="border:0; border-top:1px solid #f3f4f6; margin: 20px 0 15px 0;">
+      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor</button>
+    </div>
+
+    <!-- 3. INGRESO DE PIN PROFESOR -->
+    <div id="pantalla-pin" class="section">
+      <h3>Acceso Docente</h3>
+      <p>Ingresa el PIN de seguridad:</p>
+      <input type="password" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric">
+      <button class="btn" onclick="validarPin()">Ingresar</button>
+      <button class="btn btn-secondary" onclick="volverConsultaOInicio()">Volver</button>
+    </div>
+
+    <!-- 4. PANEL GENERAL PROFESOR (VER TODOS & MODO RÁFAGA) -->
+    <div id="pantalla-panel-profesor" class="section">
+      <h3>Panel General Docente</h3>
+      
+      <div class="tab-group">
+        <button class="tab-btn active" id="tab-lista-btn" onclick="cambiarTab('lista')">Ver Todos</button>
+        <button class="tab-btn" id="tab-rafaga-btn" onclick="cambiarTab('rafaga')">Modo Ráfaga ⚡</button>
+      </div>
+
+      <!-- FILTRO POR CURSO PARA EL PROFESOR -->
+      <div class="filter-container">
+        <label for="filtroCurso">Filtrar por curso:</label>
+        <select id="filtroCurso" onchange="renderizarPanelProfesor()">
+          <option value="Todos">Todos</option>
+          <option value="10th grade">10th grade</option>
+          <option value="11th grade A">11th grade A</option>
+          <option value="12th grade A">12th grade A</option>
+          <option value="12th grade B">12th grade B</option>
+        </select>
+      </div>
+
+      <!-- SUB-PESTAÑA 1: LISTA COMPLETA DE ALUMNOS -->
+      <div id="tab-lista">
+        <div class="student-card-list" id="contenedor-lista-alumnos">Cargando alumnos...</div>
+      </div>
+
+      <!-- SUB-PESTAÑA 2: MODO RÁFAGA (ASIGNACIÓN MASIVA) -->
+      <div id="tab-rafaga" style="display:none;">
+        <div class="block-title">1. Seleccionar Operación:</div>
+        <select id="rafagaMotivoSelect">
+          <option value="Guia Completa">Guía Completa (+1)</option>
+          <option value="Trabajo en clase">Trabajo en clase (+1)</option>
+          <option value="Compañerismo">Compañerismo (+1)</option>
+          <option value="Buena Actitud">Buena Actitud (+1)</option>
+          <option value="Cobradas">Cobradas (-1)</option>
+          <option value="Mal comportamiento">Mal comportamiento (-1)</option>
+        </select>
+
+        <div class="btn-group">
+          <button class="btn" onclick="aplicarRafaga(1)">+1 a seleccionados</button>
+          <button class="btn btn-danger" onclick="aplicarRafaga(-1)">-1 a seleccionados</button>
+        </div>
+
+        <div class="block-title">2. Seleccionar Estudiantes:</div>
+        <div style="text-align:left; margin-bottom:6px;">
+          <button class="btn-small btn-secondary" onclick="toggleSeleccionarTodos(true)">Marcar Todos</button>
+          <button class="btn-small btn-secondary" onclick="toggleSeleccionarTodos(false)">Desmarcar</button>
+        </div>
+        <div class="student-card-list" id="contenedor-rafaga-alumnos">Cargando alumnos...</div>
+      </div>
+
+      <button class="btn btn-secondary" style="margin-top: 15px;" onclick="cerrarSesionProfe()">Cerrar Sesión</button>
+    </div>
+
+    <!-- 5. PANTALLA PROFESOR - GESTIONAR ALUMNO INDIVIDUAL -->
+    <div id="pantalla-gestion-profesor" class="section">
+      <h3 id="profe-nombre-alumno">Cargando datos...</h3>
+      <div id="profe-curso-alumno" style="color:#6b7280; font-size:0.9rem;">-</div>
+      <div>Décimas Actuales:</div>
+      <div class="decimas-badge" id="profe-total-decimas">0</div>
+
+      <div class="block-title">➕ Agregar Décimas:</div>
+      <select id="motivoAgregarSelect">
+        <option value="Guia Completa">Guía Completa</option>
+        <option value="Trabajo en clase">Trabajo en clase</option>
+        <option value="Compañerismo">Compañerismo</option>
+        <option value="Buena Actitud">Buena Actitud</option>
+      </select>
+      <div class="btn-group">
+        <button class="btn" onclick="modificarDecimasIndividual(1, 'motivoAgregarSelect')">+1</button>
+        <button class="btn" onclick="modificarDecimasIndividual(2, 'motivoAgregarSelect')">+2</button>
+        <button class="btn" onclick="modificarDecimasIndividual(3, 'motivoAgregarSelect')">+3</button>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 15px 0;">
+
+      <div class="block-title">➖ Quitar Décimas:</div>
+      <select id="motivoQuitarSelect">
+        <option value="Cobradas">Cobradas</option>
+        <option value="Mal comportamiento">Mal comportamiento</option>
+        <option value="Otro">Otro</option>
+      </select>
+      <div class="btn-group">
+        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-1, 'motivoQuitarSelect')">-1</button>
+        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-2, 'motivoQuitarSelect')">-2</button>
+        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-3, 'motivoQuitarSelect')">-3</button>
+      </div>
+
+      <button class="btn btn-secondary" style="margin-top: 20px;" onclick="mostrarSeccion('pantalla-panel-profesor')">Volver al Panel General</button>
+      <button class="btn btn-secondary" onclick="cerrarSesionProfe()">Cerrar Sesión</button>
+    </div>
+
+  </div>
+
+  <script>
+    const GH_USER = "biglooc-az";
+    const GH_REPO = "DecNFC";
+    const PIN_CORRECTO = "1976";
+    const ID_PROFESOR = "EST_001"; // ID exclusiva para abrir el modo profesor con PIN
+
+    // Mapeo de cursos a sus respectivos archivos JSON
+    const ARCHIVOS_CURSOS = {
+      "10th grade": "10th.json",
+      "11th grade A": "11thA.json",
+      "12th grade A": "12thA.json",
+      "12th grade B": "12thB.json"
+    };
+
+    let baseDatos = {}; // Consolidado de todos los alumnos en memoria
+    let alumnoActualId = null;
+
+    function obtenerToken() {
+      let token = localStorage.getItem('gh_token');
+      if (!token) {
+        token = prompt("Ingresa tu Personal Access Token de GitHub:");
+        if (token) localStorage.setItem('gh_token', token.trim());
+      }
+      return token;
+    }
+
+    function mostrarToast(mensaje, esError = false) {
+      const toast = document.getElementById('toast-banner');
+      toast.innerText = mensaje;
+      toast.className = `toast ${esError ? 'toast-error' : 'toast-success'}`;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // Cargar la base de datos leyendo los 4 archivos JSON
+    async function cargarBaseDatos() {
+      const localCache = localStorage.getItem('local_db_decimas');
+      if (localCache) {
+        try {
+          baseDatos = JSON.parse(localCache);
+          if (alumnoActualId) actualizarPantallas(alumnoActualId);
+          renderizarPanelProfesor();
+        } catch (e) {}
+      }
+
+      try {
+        const promesas = Object.values(ARCHIVOS_CURSOS).map(archivo =>
+          fetch(`https://${GH_USER}.github.io/${GH_REPO}/${archivo}?t=${Date.now()}`)
+            .then(res => res.ok ? res.json() : {})
+            .catch(() => ({}))
+        );
+
+        const resultados = await Promise.all(promesas);
+        let nuevaBaseDatos = {};
+
+        resultados.forEach(data => {
+          Object.assign(nuevaBaseDatos, data);
+        });
+
+        if (Object.keys(nuevaBaseDatos).length > 0) {
+          baseDatos = nuevaBaseDatos;
+          localStorage.setItem('local_db_decimas', JSON.stringify(baseDatos));
+          if (alumnoActualId) actualizarPantallas(alumnoActualId);
+          renderizarPanelProfesor();
+        }
+      } catch (err) {
+        console.error("Error cargando archivos JSON:", err);
+      }
+    }
+
+    /* =========================================================
+       IMPLEMENTACIÓN WEB NFC API (LECTURA EN SEGUNDO PLANO)
+       ========================================================= */
+    async function iniciarEscaneoNFC() {
+      const statusMsg = document.getElementById('nfc-status-msg');
+
+      if (!('NDEFReader' in window)) {
+        if (statusMsg) statusMsg.innerText = "NFC Web no soportado en este navegador (utiliza Chrome para Android).";
+        return;
+      }
+
+      try {
+        const ndef = new NDEFReader();
+        await ndef.scan();
+
+        if (statusMsg) statusMsg.innerText = "🟢 Lector NFC listo en segundo plano";
+
+        ndef.addEventListener("readingerror", () => {
+          mostrarToast("Error al leer la tarjeta NFC", true);
+        });
+
+        ndef.addEventListener("reading", ({ message, serialNumber }) => {
+          let idDetectado = null;
+
+          // 1. Buscar en los registros NDEF si la tarjeta contiene la URL con ID
+          for (const record of message.records) {
+            if (record.recordType === "url" || record.recordType === "text") {
+              const textDecoder = new TextDecoder(record.encoding || "utf-8");
+              const contenido = textDecoder.decode(record.data);
+              
+              try {
+                // Si el contenido grabado en el chip es la URL completa
+                const url = new URL(contenido);
+                const idUrl = url.searchParams.get('id');
+                if (idUrl) {
+                  idDetectado = idUrl;
+                  break;
+                }
+              } catch (e) {
+                // Si la tarjeta contiene directamente el ID como texto (ej: "EST_002")
+                if (contenido.trim()) {
+                  idDetectado = contenido.trim();
+                }
+              }
+            }
+          }
+
+          // 2. Si no había URL/texto grabado en NDEF, se recurre al Serial Number del chip
+          if (!idDetectado && serialNumber) {
+            idDetectado = serialNumber;
+          }
+
+          if (idDetectado) {
+            procesarEscaneoNFC(idDetectado);
+          } else {
+            mostrarToast("No se pudo extraer el ID de la tarjeta", true);
+          }
+        });
+
+      } catch (error) {
+        console.warn("Permiso de NFC o error de escaneo:", error);
+        if (statusMsg) statusMsg.innerText = "Toca la pantalla para activar el lector NFC";
+      }
+    }
+
+    // Procesa el ID recibido por el NFC cuando la web está abierta
+    function procesarEscaneoNFC(id) {
+      const idLimpio = String(id).trim();
+
+      // Actualizar la URL de la barra de navegación sin recargar la página
+      const nuevaUrl = `${window.location.pathname}?id=${encodeURIComponent(idLimpio)}`;
+      window.history.pushState({ path: nuevaUrl }, '', nuevaUrl);
+
+      alumnoActualId = idLimpio;
+
+      // Si es la tarjeta del profesor
+      if (idLimpio === ID_PROFESOR) {
+        if (sessionStorage.getItem('profe_session') === 'true') {
+          mostrarSeccion('pantalla-panel-profesor');
+        } else {
+          mostrarSeccion('pantalla-pin');
+        }
+        mostrarToast("Tarjeta Profesor detectada");
+        return;
+      }
+
+      // Si es la tarjeta de un estudiante
+      if (sessionStorage.getItem('profe_session') === 'true') {
+        // Modo Profesor Activo: abre directamente la gestión del estudiante
+        cargarModoProfesor(idLimpio);
+        mostrarToast(`Estudiante cargado en Panel Profesor`);
+      } else {
+        // Modo Estudiante: muestra la pantalla de consulta de décimas
+        if (baseDatos[idLimpio]) {
+          actualizarPantallas(idLimpio);
+          mostrarSeccion('pantalla-consulta');
+          mostrarToast("Tarjeta leída con éxito");
+        } else {
+          mostrarToast(`Estudiante con ID ${idLimpio} no encontrado`, true);
+        }
+      }
+    }
+
+    window.onload = async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      alumnoActualId = urlParams.get('id');
+
+      await cargarBaseDatos();
+
+      if (alumnoActualId === ID_PROFESOR) {
+        if (sessionStorage.getItem('profe_session') === 'true') {
+          mostrarSeccion('pantalla-panel-profesor');
+        } else {
+          mostrarSeccion('pantalla-pin');
+        }
+      } else if (alumnoActualId) {
+        if (sessionStorage.getItem('profe_session') === 'true') {
+          mostrarSeccion('pantalla-gestion-profesor');
+        } else {
+          mostrarSeccion('pantalla-consulta');
+        }
+      } else {
+        mostrarSeccion('pantalla-inicio');
+      }
+
+      // Intentar activar el lector NFC en segundo plano
+      iniciarEscaneoNFC();
+    };
+
+    // Permitir activar el lector NFC tras toque si el navegador bloquea la activación automática
+    document.addEventListener('click', () => {
+      if ('NDEFReader' in window) {
+        iniciarEscaneoNFC();
+      }
+    }, { once: true });
+
+    function mostrarSeccion(idSeccion) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(idSeccion).classList.add('active');
+    }
+
+    function volverConsultaOInicio() {
+      document.getElementById('pinInput').value = '';
+      if (alumnoActualId && alumnoActualId !== ID_PROFESOR) {
+        mostrarSeccion('pantalla-consulta');
+      } else {
+        mostrarSeccion('pantalla-inicio');
+      }
+    }
+
+    function validarPin() {
+      const pinIngresado = document.getElementById('pinInput').value;
+      if (pinIngresado === PIN_CORRECTO) {
+        sessionStorage.setItem('profe_session', 'true');
+        document.getElementById('pinInput').value = '';
+        
+        if (alumnoActualId === ID_PROFESOR || !alumnoActualId) {
+          renderizarPanelProfesor();
+          mostrarSeccion('pantalla-panel-profesor');
+        } else {
+          cargarModoProfesor(alumnoActualId);
+        }
+      } else {
+        mostrarToast("PIN incorrecto", true);
+        document.getElementById('pinInput').value = '';
+      }
+    }
+
+    function cerrarSesionProfe() {
+      sessionStorage.removeItem('profe_session');
+      volverConsultaOInicio();
+    }
+
+    function cambiarTab(tab) {
+      document.getElementById('tab-lista').style.display = tab === 'lista' ? 'block' : 'none';
+      document.getElementById('tab-rafaga').style.display = tab === 'rafaga' ? 'block' : 'none';
+      document.getElementById('tab-lista-btn').className = `tab-btn ${tab === 'lista' ? 'active' : ''}`;
+      document.getElementById('tab-rafaga-btn').className = `tab-btn ${tab === 'rafaga' ? 'active' : ''}`;
+    }
+
+    function renderizarPanelProfesor() {
+      const contenedorLista = document.getElementById('contenedor-lista-alumnos');
+      const contenedorRafaga = document.getElementById('contenedor-rafaga-alumnos');
+      const cursoSeleccionado = document.getElementById('filtroCurso') ? document.getElementById('filtroCurso').value : 'Todos';
+
+      let alumnos = [];
+
+      Object.keys(baseDatos).forEach(id => {
+        if (id === ID_PROFESOR) return;
+
+        const alu = baseDatos[id];
+        alumnos.push({
+          id: id,
+          nombre: alu.nombre || '',
+          apellido: alu.apellido || '',
+          curso: alu.curso || 'Sin curso',
+          decimas: alu.decimas || 0
+        });
+      });
+
+      // 1. Filtrar por curso
+      if (cursoSeleccionado !== "Todos") {
+        alumnos = alumnos.filter(alu => alu.curso === cursoSeleccionado);
+      }
+
+      // 2. Ordenar alfabéticamente por apellido
+      alumnos.sort((a, b) => 
+        a.apellido.localeCompare(b.apellido, "es", { sensitivity: "base" })
+      );
+
+      let htmlLista = '';
+      let htmlRafaga = '';
+
+      alumnos.forEach(alu => {
+        const nombreCompleto = `${alu.nombre} ${alu.apellido}`.trim();
+
+        htmlLista += `
+          <div class="student-row">
+            <div class="student-info">
+              <b>${nombreCompleto}</b>
+              <small>${alu.curso} - Décimas: <b>${alu.decimas}</b></small>
+            </div>
+            <button class="btn-small btn" onclick="seleccionarAlumnoIndividual('${alu.id}')">Gestionar</button>
+          </div>
+        `;
+
+        htmlRafaga += `
+          <div class="student-row">
+            <label class="checkbox-row">
+              <input type="checkbox" class="chk-rafaga" value="${alu.id}">
+              <div class="student-info">
+                <b>${nombreCompleto}</b>
+                <small>${alu.curso} (Saldo: ${alu.decimas})</small>
+              </div>
+            </label>
+          </div>
+        `;
+      });
+
+      contenedorLista.innerHTML = htmlLista || '<p style="color:#888; text-align:center;">No hay alumnos en este curso</p>';
+      contenedorRafaga.innerHTML = htmlRafaga || '<p style="color:#888; text-align:center;">No hay alumnos en este curso</p>';
+    }
+
+    function seleccionarAlumnoIndividual(id) {
+      alumnoActualId = id;
+      cargarModoProfesor(id);
+    }
+
+    function toggleSeleccionarTodos(estado) {
+      document.querySelectorAll('.chk-rafaga').forEach(chk => chk.checked = estado);
+    }
+
+    function actualizarPantallas(id) {
+      const idLimpio = String(id).trim();
+      const alumno = baseDatos[idLimpio];
+
+      if (!alumno) return;
+
+      const nombreCompleto = `${alumno.nombre || ''} ${alumno.apellido || ''}`.trim();
+      const curso = alumno.curso || 'Sin curso';
+
+      document.getElementById('estudiante-nombre').innerText = nombreCompleto;
+      document.getElementById('estudiante-curso').innerText = `Curso: ${curso}`;
+      document.getElementById('estudiante-total-decimas').innerText = alumno.decimas || 0;
+
+      document.getElementById('profe-nombre-alumno').innerText = nombreCompleto;
+      document.getElementById('profe-curso-alumno').innerText = `Curso: ${curso}`;
+      document.getElementById('profe-total-decimas').innerText = alumno.decimas || 0;
+
+      const historialContainer = document.getElementById('estudiante-historial');
+      historialContainer.innerHTML = '';
+
+      if (!alumno.historial || alumno.historial.length === 0) {
+        historialContainer.innerHTML = '<div style="text-align:center; color:#888;">Sin movimientos aún.</div>';
+      } else {
+        alumno.historial.slice().reverse().forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          const signo = item.cantidad > 0 ? '+' : '';
+          div.innerHTML = `<span><b>${item.motivo}</b><br><small>${item.fecha}</small></span>
+                           <span style="color:${item.cantidad > 0 ? 'var(--success)' : 'var(--error)'}; font-weight:bold;">${signo}${item.cantidad}</span>`;
+          historialContainer.appendChild(div);
+        });
+      }
+    }
+
+    function cargarModoProfesor(id) {
+      actualizarPantallas(id);
+      mostrarSeccion('pantalla-gestion-profesor');
+    }
+
+    // Guardar cambios directamente en el/los JSON de los cursos modificados
+    async function guardarEnGitHub(cursosAModificar) {
+      const token = obtenerToken();
+      if (!token) return;
+
+      localStorage.setItem('local_db_decimas', JSON.stringify(baseDatos));
+      renderizarPanelProfesor();
+
+      for (const nombreCurso of cursosAModificar) {
+        const nombreArchivo = ARCHIVOS_CURSOS[nombreCurso];
+        if (!nombreArchivo) continue;
+
+        // Filtrar datos que pertenecen a este curso
+        const datosCurso = {};
+        Object.keys(baseDatos).forEach(id => {
+          if (baseDatos[id].curso === nombreCurso) {
+            datosCurso[id] = baseDatos[id];
+          }
+        });
+
+        const API_URL = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${nombreArchivo}`;
+
+        try {
+          // Obtener SHA actual del archivo específico
+          const resSha = await fetch(API_URL, { headers: { 'Authorization': `token ${token}` } });
+          if (!resSha.ok) continue;
+          const dataSha = await resSha.json();
+
+          const jsonString = JSON.stringify(datosCurso, null, 2);
+          const utf8Bytes = new TextEncoder().encode(jsonString);
+          let binaryString = "";
+          utf8Bytes.forEach(b => binaryString += String.fromCharCode(b));
+          const contentBase64 = btoa(binaryString);
+
+          await fetch(API_URL, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              message: `Actualización de décimas (${nombreCurso})`,
+              content: contentBase64,
+              sha: dataSha.sha
+            })
+          });
+        } catch (err) {
+          console.error(`Error guardando ${nombreArchivo}:`, err);
+          mostrarToast(`Error guardando ${nombreCurso}`, true);
+        }
+      }
+    }
+
+    async function modificarDecimasIndividual(cantidad, selectId) {
+      if (!alumnoActualId) return;
+
+      const idLimpio = String(alumnoActualId).trim();
+      const motivo = document.getElementById(selectId).value;
+
+      if (!baseDatos[idLimpio]) return;
+
+      baseDatos[idLimpio].decimas = (baseDatos[idLimpio].decimas || 0) + cantidad;
+      const ahora = new Date();
+      const fecha = `${ahora.getDate()}/${ahora.getMonth()+1} ${ahora.getHours()}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+      
+      if (!baseDatos[idLimpio].historial) baseDatos[idLimpio].historial = [];
+      baseDatos[idLimpio].historial.push({ cantidad: cantidad, motivo: motivo, fecha: fecha });
+
+      actualizarPantallas(idLimpio);
+      mostrarToast(`${cantidad > 0 ? '+' : ''}${cantidad} décima(s) aplicadas`);
+      
+      const cursoAlumno = baseDatos[idLimpio].curso;
+      await guardarEnGitHub([cursoAlumno]);
+    }
+
+    async function aplicarRafaga(cantidad) {
+      const seleccionados = Array.from(document.querySelectorAll('.chk-rafaga:checked')).map(c => c.value);
+      
+      if (seleccionados.length === 0) {
+        mostrarToast("Selecciona al menos un alumno", true);
+        return;
+      }
+
+      const motivo = document.getElementById('rafagaMotivoSelect').value;
+      const ahora = new Date();
+      const fecha = `${ahora.getDate()}/${ahora.getMonth()+1} ${ahora.getHours()}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
+      const cursosAfectados = new Set();
+
+      seleccionados.forEach(id => {
+        if (baseDatos[id]) {
+          baseDatos[id].decimas = (baseDatos[id].decimas || 0) + cantidad;
+          if (!baseDatos[id].historial) baseDatos[id].historial = [];
+          baseDatos[id].historial.push({ cantidad: cantidad, motivo: motivo, fecha: fecha });
+
+          if (baseDatos[id].curso) {
+            cursosAfectados.add(baseDatos[id].curso);
+          }
+        }
+      });
+
+      toggleSeleccionarTodos(false);
+      mostrarToast(`Ráfaga aplicada a ${seleccionados.length} estudiante(s)`);
+      await guardarEnGitHub(Array.from(cursosAfectados));
+    }
+  </script>
+</body>
+</html>
