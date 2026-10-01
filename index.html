@@ -55,7 +55,7 @@
     .btn-danger { background-color: var(--error); }
     .btn-small { padding: 6px 12px; font-size: 0.85rem; width: auto; display: inline-block; }
 
-    input[type="password"], select {
+    input[type="text"], input[type="password"], select {
       width: 100%; padding: 12px; font-size: 1rem; margin: 8px 0 16px 0;
       border: 2px solid #e5e7eb; border-radius: 10px; box-sizing: border-box; outline: none;
       background-color: #f9fafb;
@@ -127,12 +127,6 @@
     .toast-success { background-color: #d1fae5; color: #065f46; }
     .toast-error { background-color: #fee2e2; color: #991b1b; }
 
-    .nfc-status {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin-top: 8px;
-    }
-
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
@@ -147,11 +141,20 @@
     <div id="pantalla-inicio" class="section active">
       <div class="nfc-icon">💳</div>
       <p>Acerca tu tarjeta NFC al dispositivo para ver tus décimas.</p>
-      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor</button>
-      <div id="nfc-status-msg" class="nfc-status">Iniciando lector NFC web...</div>
+      <button class="btn" onclick="mostrarSeccion('pantalla-login-alumno')">Ingresar con ID Estudiante</button>
+      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor (EST_001)</button>
     </div>
 
-    <!-- 2. PANTALLA CONSULTA ESTUDIANTE -->
+    <!-- 1.B PANTALLA LOGIN ESTUDIANTE CON ID -->
+    <div id="pantalla-login-alumno" class="section">
+      <h3>Acceso Estudiante</h3>
+      <p>Ingresa tu ID de usuario:</p>
+      <input type="text" id="idEstudianteInput" placeholder="Ej. EST_002">
+      <button class="btn" onclick="loginEstudiante()">Ingresar</button>
+      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-inicio')">Volver</button>
+    </div>
+
+    <!-- 2. PANTALLA CONSULTA ESTUDIANTE + EDICIÓN DOCENTE (SI INICIÓ SESIÓN EL PROFE) -->
     <div id="pantalla-consulta" class="section">
       <h3 id="estudiante-nombre">Cargando datos...</h3>
       <div id="estudiante-curso" style="color:#6b7280; font-size:0.9rem;">-</div>
@@ -161,20 +164,55 @@
       <h4>Últimos Movimientos</h4>
       <div class="history-list" id="estudiante-historial"></div>
 
+      <!-- SECCIÓN EXCLUSIVA DE EDICIÓN PARA EL PROFESOR DENTRO DEL PERFIL DEL ALUMNO -->
+      <div id="seccion-edicion-profesor" style="display:none; margin-top:20px; border-top:2px dashed #e5e7eb; padding-top:15px;">
+        <h4 style="color:var(--primary); margin:0 0 10px 0;">Panel Edición Docente ✏️</h4>
+        
+        <div class="block-title">➕ Agregar Décimas:</div>
+        <select id="motivoAgregarSelect">
+          <option value="Guia Completa">Guía Completa</option>
+          <option value="Trabajo en clase">Trabajo en clase</option>
+          <option value="Compañerismo">Compañerismo</option>
+          <option value="Buena Actitud">Buena Actitud</option>
+        </select>
+        <div class="btn-group">
+          <button class="btn" onclick="modificarDecimasIndividual(1, 'motivoAgregarSelect')">+1</button>
+          <button class="btn" onclick="modificarDecimasIndividual(2, 'motivoAgregarSelect')">+2</button>
+          <button class="btn" onclick="modificarDecimasIndividual(3, 'motivoAgregarSelect')">+3</button>
+        </div>
+
+        <div class="block-title">➖ Quitar Décimas:</div>
+        <select id="motivoQuitarSelect">
+          <option value="Cobradas">Cobradas</option>
+          <option value="Mal comportamiento">Mal comportamiento</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <div class="btn-group">
+          <button class="btn btn-danger" onclick="modificarDecimasIndividual(-1, 'motivoQuitarSelect')">-1</button>
+          <button class="btn btn-danger" onclick="modificarDecimasIndividual(-2, 'motivoQuitarSelect')">-2</button>
+          <button class="btn btn-danger" onclick="modificarDecimasIndividual(-3, 'motivoQuitarSelect')">-3</button>
+        </div>
+      </div>
+
       <hr style="border:0; border-top:1px solid #f3f4f6; margin: 20px 0 15px 0;">
-      <button class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor</button>
+      
+      <div id="btn-profe-panel" style="display:none;">
+        <button class="btn" onclick="mostrarSeccion('pantalla-panel-profesor')">Volver al Panel General</button>
+      </div>
+      <button id="btn-profe-acceso" class="btn btn-secondary" onclick="mostrarSeccion('pantalla-pin')">Acceso Profesor</button>
+      <button class="btn btn-secondary" onclick="cerrarSesion()">Cerrar / Volver</button>
     </div>
 
-    <!-- 3. INGRESO DE PIN PROFESOR -->
+    <!-- 3. INGRESO DE PIN PROFESOR (EXCLUSIVO PARA ID EST_001) -->
     <div id="pantalla-pin" class="section">
-      <h3>Acceso Docente</h3>
-      <p>Ingresa el PIN de seguridad:</p>
+      <h3>Acceso Docente Exclusivo</h3>
+      <p>Ingresa el PIN de seguridad para acceder como Docente (EST_001):</p>
       <input type="password" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric">
       <button class="btn" onclick="validarPin()">Ingresar</button>
       <button class="btn btn-secondary" onclick="volverConsultaOInicio()">Volver</button>
     </div>
 
-    <!-- 4. PANEL GENERAL PROFESOR (VER TODOS & MODO RÁFAGA) -->
+    <!-- 4. PANEL GENERAL PROFESOR (SOLO ACCESIBLE CON EST_001) -->
     <div id="pantalla-panel-profesor" class="section">
       <h3>Panel General Docente</h3>
       
@@ -186,7 +224,7 @@
       <!-- FILTRO POR CURSO PARA EL PROFESOR -->
       <div class="filter-container">
         <label for="filtroCurso">Filtrar por curso:</label>
-        <select id="filtroCurso" onchange="renderizarPanelProfesor()">
+        <select id="filtroCurso" onchange="cambiarFiltroCurso(this.value)">
           <option value="Todos">Todos</option>
           <option value="10th grade">10th grade</option>
           <option value="11th grade A">11th grade A</option>
@@ -225,45 +263,7 @@
         <div class="student-card-list" id="contenedor-rafaga-alumnos">Cargando alumnos...</div>
       </div>
 
-      <button class="btn btn-secondary" style="margin-top: 15px;" onclick="cerrarSesionProfe()">Cerrar Sesión</button>
-    </div>
-
-    <!-- 5. PANTALLA PROFESOR - GESTIONAR ALUMNO INDIVIDUAL -->
-    <div id="pantalla-gestion-profesor" class="section">
-      <h3 id="profe-nombre-alumno">Cargando datos...</h3>
-      <div id="profe-curso-alumno" style="color:#6b7280; font-size:0.9rem;">-</div>
-      <div>Décimas Actuales:</div>
-      <div class="decimas-badge" id="profe-total-decimas">0</div>
-
-      <div class="block-title">➕ Agregar Décimas:</div>
-      <select id="motivoAgregarSelect">
-        <option value="Guia Completa">Guía Completa</option>
-        <option value="Trabajo en clase">Trabajo en clase</option>
-        <option value="Compañerismo">Compañerismo</option>
-        <option value="Buena Actitud">Buena Actitud</option>
-      </select>
-      <div class="btn-group">
-        <button class="btn" onclick="modificarDecimasIndividual(1, 'motivoAgregarSelect')">+1</button>
-        <button class="btn" onclick="modificarDecimasIndividual(2, 'motivoAgregarSelect')">+2</button>
-        <button class="btn" onclick="modificarDecimasIndividual(3, 'motivoAgregarSelect')">+3</button>
-      </div>
-
-      <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 15px 0;">
-
-      <div class="block-title">➖ Quitar Décimas:</div>
-      <select id="motivoQuitarSelect">
-        <option value="Cobradas">Cobradas</option>
-        <option value="Mal comportamiento">Mal comportamiento</option>
-        <option value="Otro">Otro</option>
-      </select>
-      <div class="btn-group">
-        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-1, 'motivoQuitarSelect')">-1</button>
-        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-2, 'motivoQuitarSelect')">-2</button>
-        <button class="btn btn-danger" onclick="modificarDecimasIndividual(-3, 'motivoQuitarSelect')">-3</button>
-      </div>
-
-      <button class="btn btn-secondary" style="margin-top: 20px;" onclick="mostrarSeccion('pantalla-panel-profesor')">Volver al Panel General</button>
-      <button class="btn btn-secondary" onclick="cerrarSesionProfe()">Cerrar Sesión</button>
+      <button class="btn btn-secondary" style="margin-top: 15px;" onclick="cerrarSesionProfe()">Cerrar Sesión Profe</button>
     </div>
 
   </div>
@@ -272,9 +272,8 @@
     const GH_USER = "biglooc-az";
     const GH_REPO = "DecNFC";
     const PIN_CORRECTO = "1976";
-    const ID_PROFESOR = "EST_001"; // ID exclusiva para abrir el modo profesor con PIN
+    const ID_PROFESOR = "EST_001"; // ID exclusiva para docente / admin
 
-    // Mapeo de cursos a sus respectivos archivos JSON
     const ARCHIVOS_CURSOS = {
       "10th grade": "10th.json",
       "11th grade A": "11thA.json",
@@ -282,8 +281,9 @@
       "12th grade B": "12thB.json"
     };
 
-    let baseDatos = {}; // Consolidado de todos los alumnos en memoria
+    let baseDatos = {}; 
     let alumnoActualId = null;
+    let cursoFiltroActual = "Todos";
 
     function obtenerToken() {
       let token = localStorage.getItem('gh_token');
@@ -302,7 +302,6 @@
       setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
-    // Cargar la base de datos leyendo los 4 archivos JSON
     async function cargarBaseDatos() {
       const localCache = localStorage.getItem('local_db_decimas');
       if (localCache) {
@@ -338,150 +337,49 @@
       }
     }
 
-    /* =========================================================
-       IMPLEMENTACIÓN WEB NFC API (LECTURA EN SEGUNDO PLANO)
-       ========================================================= */
-    async function iniciarEscaneoNFC() {
-      const statusMsg = document.getElementById('nfc-status-msg');
-
-      if (!('NDEFReader' in window)) {
-        if (statusMsg) statusMsg.innerText = "NFC Web no soportado en este navegador (utiliza Chrome para Android).";
-        return;
-      }
-
-      try {
-        const ndef = new NDEFReader();
-        await ndef.scan();
-
-        if (statusMsg) statusMsg.innerText = "🟢 Lector NFC listo en segundo plano";
-
-        ndef.addEventListener("readingerror", () => {
-          mostrarToast("Error al leer la tarjeta NFC", true);
-        });
-
-        ndef.addEventListener("reading", ({ message, serialNumber }) => {
-          let idDetectado = null;
-
-          // 1. Buscar en los registros NDEF si la tarjeta contiene la URL con ID
-          for (const record of message.records) {
-            if (record.recordType === "url" || record.recordType === "text") {
-              const textDecoder = new TextDecoder(record.encoding || "utf-8");
-              const contenido = textDecoder.decode(record.data);
-              
-              try {
-                // Si el contenido grabado en el chip es la URL completa
-                const url = new URL(contenido);
-                const idUrl = url.searchParams.get('id');
-                if (idUrl) {
-                  idDetectado = idUrl;
-                  break;
-                }
-              } catch (e) {
-                // Si la tarjeta contiene directamente el ID como texto (ej: "EST_002")
-                if (contenido.trim()) {
-                  idDetectado = contenido.trim();
-                }
-              }
-            }
-          }
-
-          // 2. Si no había URL/texto grabado en NDEF, se recurre al Serial Number del chip
-          if (!idDetectado && serialNumber) {
-            idDetectado = serialNumber;
-          }
-
-          if (idDetectado) {
-            procesarEscaneoNFC(idDetectado);
-          } else {
-            mostrarToast("No se pudo extraer el ID de la tarjeta", true);
-          }
-        });
-
-      } catch (error) {
-        console.warn("Permiso de NFC o error de escaneo:", error);
-        if (statusMsg) statusMsg.innerText = "Toca la pantalla para activar el lector NFC";
-      }
-    }
-
-    // Procesa el ID recibido por el NFC cuando la web está abierta
-    function procesarEscaneoNFC(id) {
-      const idLimpio = String(id).trim();
-
-      // Actualizar la URL de la barra de navegación sin recargar la página
-      const nuevaUrl = `${window.location.pathname}?id=${encodeURIComponent(idLimpio)}`;
-      window.history.pushState({ path: nuevaUrl }, '', nuevaUrl);
-
-      alumnoActualId = idLimpio;
-
-      // Si es la tarjeta del profesor
-      if (idLimpio === ID_PROFESOR) {
-        if (sessionStorage.getItem('profe_session') === 'true') {
-          mostrarSeccion('pantalla-panel-profesor');
-        } else {
-          mostrarSeccion('pantalla-pin');
-        }
-        mostrarToast("Tarjeta Profesor detectada");
-        return;
-      }
-
-      // Si es la tarjeta de un estudiante
-      if (sessionStorage.getItem('profe_session') === 'true') {
-        // Modo Profesor Activo: abre directamente la gestión del estudiante
-        cargarModoProfesor(idLimpio);
-        mostrarToast(`Estudiante cargado en Panel Profesor`);
-      } else {
-        // Modo Estudiante: muestra la pantalla de consulta de décimas
-        if (baseDatos[idLimpio]) {
-          actualizarPantallas(idLimpio);
-          mostrarSeccion('pantalla-consulta');
-          mostrarToast("Tarjeta leída con éxito");
-        } else {
-          mostrarToast(`Estudiante con ID ${idLimpio} no encontrado`, true);
-        }
-      }
-    }
-
     window.onload = async function() {
       const urlParams = new URLSearchParams(window.location.search);
       alumnoActualId = urlParams.get('id');
 
       await cargarBaseDatos();
 
-      if (alumnoActualId === ID_PROFESOR) {
-        if (sessionStorage.getItem('profe_session') === 'true') {
-          mostrarSeccion('pantalla-panel-profesor');
-        } else {
-          mostrarSeccion('pantalla-pin');
-        }
-      } else if (alumnoActualId) {
-        if (sessionStorage.getItem('profe_session') === 'true') {
-          mostrarSeccion('pantalla-gestion-profesor');
-        } else {
-          mostrarSeccion('pantalla-consulta');
-        }
+      if (alumnoActualId) {
+        cargarPerfilEstudiante(alumnoActualId);
       } else {
         mostrarSeccion('pantalla-inicio');
       }
-
-      // Intentar activar el lector NFC en segundo plano
-      iniciarEscaneoNFC();
     };
-
-    // Permitir activar el lector NFC tras toque si el navegador bloquea la activación automática
-    document.addEventListener('click', () => {
-      if ('NDEFReader' in window) {
-        iniciarEscaneoNFC();
-      }
-    }, { once: true });
 
     function mostrarSeccion(idSeccion) {
       document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
       document.getElementById(idSeccion).classList.add('active');
     }
 
+    function loginEstudiante() {
+      const idInput = document.getElementById('idEstudianteInput').value.trim();
+      if (!idInput) {
+        mostrarToast("Ingresa un ID válido", true);
+        return;
+      }
+
+      if (baseDatos[idInput]) {
+        alumnoActualId = idInput;
+        cargarPerfilEstudiante(idInput);
+        document.getElementById('idEstudianteInput').value = '';
+      } else {
+        mostrarToast("El ID de estudiante no existe", true);
+      }
+    }
+
+    function cargarPerfilEstudiante(id) {
+      alumnoActualId = id;
+      actualizarPantallas(id);
+      mostrarSeccion('pantalla-consulta');
+    }
+
     function volverConsultaOInicio() {
       document.getElementById('pinInput').value = '';
-      if (alumnoActualId && alumnoActualId !== ID_PROFESOR) {
+      if (alumnoActualId) {
         mostrarSeccion('pantalla-consulta');
       } else {
         mostrarSeccion('pantalla-inicio');
@@ -494,12 +392,14 @@
         sessionStorage.setItem('profe_session', 'true');
         document.getElementById('pinInput').value = '';
         
-        if (alumnoActualId === ID_PROFESOR || !alumnoActualId) {
+        if (alumnoActualId) {
+          actualizarPantallas(alumnoActualId);
+          mostrarSeccion('pantalla-consulta');
+        } else {
           renderizarPanelProfesor();
           mostrarSeccion('pantalla-panel-profesor');
-        } else {
-          cargarModoProfesor(alumnoActualId);
         }
+        mostrarToast("Sesión de docente iniciada");
       } else {
         mostrarToast("PIN incorrecto", true);
         document.getElementById('pinInput').value = '';
@@ -508,7 +408,15 @@
 
     function cerrarSesionProfe() {
       sessionStorage.removeItem('profe_session');
-      volverConsultaOInicio();
+      if (alumnoActualId) {
+        actualizarPantallas(alumnoActualId);
+      }
+      mostrarSeccion('pantalla-inicio');
+    }
+
+    function cerrarSesion() {
+      alumnoActualId = null;
+      mostrarSeccion('pantalla-inicio');
     }
 
     function cambiarTab(tab) {
@@ -518,10 +426,19 @@
       document.getElementById('tab-rafaga-btn').className = `tab-btn ${tab === 'rafaga' ? 'active' : ''}`;
     }
 
+    function cambiarFiltroCurso(valor) {
+      cursoFiltroActual = valor;
+      renderizarPanelProfesor();
+    }
+
     function renderizarPanelProfesor() {
       const contenedorLista = document.getElementById('contenedor-lista-alumnos');
       const contenedorRafaga = document.getElementById('contenedor-rafaga-alumnos');
-      const cursoSeleccionado = document.getElementById('filtroCurso') ? document.getElementById('filtroCurso').value : 'Todos';
+      const selectElement = document.getElementById('filtroCurso');
+
+      if (selectElement) {
+        selectElement.value = cursoFiltroActual;
+      }
 
       let alumnos = [];
 
@@ -531,19 +448,17 @@
         const alu = baseDatos[id];
         alumnos.push({
           id: id,
-          nombre: alu.nombre || '',
-          apellido: alu.apellido || '',
-          curso: alu.curso || 'Sin curso',
+          nombre: (alu.nombre || '').trim(),
+          apellido: (alu.apellido || '').trim(),
+          curso: (alu.curso || 'Sin curso').trim(),
           decimas: alu.decimas || 0
         });
       });
 
-      // 1. Filtrar por curso
-      if (cursoSeleccionado !== "Todos") {
-        alumnos = alumnos.filter(alu => alu.curso === cursoSeleccionado);
+      if (cursoFiltroActual !== "Todos") {
+        alumnos = alumnos.filter(alu => alu.curso.toLowerCase() === cursoFiltroActual.toLowerCase());
       }
 
-      // 2. Ordenar alfabéticamente por apellido
       alumnos.sort((a, b) => 
         a.apellido.localeCompare(b.apellido, "es", { sensitivity: "base" })
       );
@@ -560,7 +475,7 @@
               <b>${nombreCompleto}</b>
               <small>${alu.curso} - Décimas: <b>${alu.decimas}</b></small>
             </div>
-            <button class="btn-small btn" onclick="seleccionarAlumnoIndividual('${alu.id}')">Gestionar</button>
+            <button class="btn-small btn" onclick="cargarPerfilEstudiante('${alu.id}')">Gestionar</button>
           </div>
         `;
 
@@ -581,15 +496,6 @@
       contenedorRafaga.innerHTML = htmlRafaga || '<p style="color:#888; text-align:center;">No hay alumnos en este curso</p>';
     }
 
-    function seleccionarAlumnoIndividual(id) {
-      alumnoActualId = id;
-      cargarModoProfesor(id);
-    }
-
-    function toggleSeleccionarTodos(estado) {
-      document.querySelectorAll('.chk-rafaga').forEach(chk => chk.checked = estado);
-    }
-
     function actualizarPantallas(id) {
       const idLimpio = String(id).trim();
       const alumno = baseDatos[idLimpio];
@@ -598,15 +504,13 @@
 
       const nombreCompleto = `${alumno.nombre || ''} ${alumno.apellido || ''}`.trim();
       const curso = alumno.curso || 'Sin curso';
+      const esProfesorSesion = sessionStorage.getItem('profe_session') === 'true';
 
       document.getElementById('estudiante-nombre').innerText = nombreCompleto;
       document.getElementById('estudiante-curso').innerText = `Curso: ${curso}`;
       document.getElementById('estudiante-total-decimas').innerText = alumno.decimas || 0;
 
-      document.getElementById('profe-nombre-alumno').innerText = nombreCompleto;
-      document.getElementById('profe-curso-alumno').innerText = `Curso: ${curso}`;
-      document.getElementById('profe-total-decimas').innerText = alumno.decimas || 0;
-
+      // Historial
       const historialContainer = document.getElementById('estudiante-historial');
       historialContainer.innerHTML = '';
 
@@ -622,14 +526,23 @@
           historialContainer.appendChild(div);
         });
       }
+
+      // Mostrar/Ocultar Controles Docente en el Perfil del Estudiante
+      const seccionEdicion = document.getElementById('seccion-edicion-profesor');
+      const btnProfePanel = document.getElementById('btn-profe-panel');
+      const btnProfeAcceso = document.getElementById('btn-profe-acceso');
+
+      if (esProfesorSesion) {
+        seccionEdicion.style.display = 'block';
+        btnProfePanel.style.display = 'block';
+        btnProfeAcceso.style.display = 'none';
+      } else {
+        seccionEdicion.style.display = 'none';
+        btnProfePanel.style.display = 'none';
+        btnProfeAcceso.style.display = 'block';
+      }
     }
 
-    function cargarModoProfesor(id) {
-      actualizarPantallas(id);
-      mostrarSeccion('pantalla-gestion-profesor');
-    }
-
-    // Guardar cambios directamente en el/los JSON de los cursos modificados
     async function guardarEnGitHub(cursosAModificar) {
       const token = obtenerToken();
       if (!token) return;
@@ -641,7 +554,6 @@
         const nombreArchivo = ARCHIVOS_CURSOS[nombreCurso];
         if (!nombreArchivo) continue;
 
-        // Filtrar datos que pertenecen a este curso
         const datosCurso = {};
         Object.keys(baseDatos).forEach(id => {
           if (baseDatos[id].curso === nombreCurso) {
@@ -652,7 +564,6 @@
         const API_URL = `https://api.github.com/repos/${GH_USER}/${GH_REPO}/contents/${nombreArchivo}`;
 
         try {
-          // Obtener SHA actual del archivo específico
           const resSha = await fetch(API_URL, { headers: { 'Authorization': `token ${token}` } });
           if (!resSha.ok) continue;
           const dataSha = await resSha.json();
@@ -702,6 +613,10 @@
       
       const cursoAlumno = baseDatos[idLimpio].curso;
       await guardarEnGitHub([cursoAlumno]);
+    }
+
+    function toggleSeleccionarTodos(estado) {
+      document.querySelectorAll('.chk-rafaga').forEach(chk => chk.checked = estado);
     }
 
     async function aplicarRafaga(cantidad) {
